@@ -20,5 +20,10 @@ namespace roundhouse.infrastructure.extensions
         {
             for (var i = start; i <= end; i++) yield return i;
         }
+
+        public static bool sequence_starts_with<T>(this IEnumerable<T> leftSeq, IEnumerable<T> rightSeq)
+        {
+            return leftSeq.Take(rightSeq.Count()).SequenceEqual(rightSeq);
+        }
     }
 }
