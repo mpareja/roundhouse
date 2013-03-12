@@ -16,6 +16,18 @@ namespace roundhouse.infrastructure.filesystem
     public sealed class WindowsFileSystemAccess : FileSystemAccess
     {
         #region File
+        private static Encoding[] encodings;
+        static WindowsFileSystemAccess()
+        {
+            // arrange by length since some are substrings of others (Unicode vs Unicode32)
+            // Here is the list at moment of writing:
+            // Unicode (UTF-32), Unicode (UTF-32 Big-Endian), Unicode (UTF-8), Unicode, Unicode (Big-Endian)
+            encodings = Encoding.GetEncodings()
+                .Select(e => e.GetEncoding())
+                .Where(e => e.GetPreamble().Length > 0)
+                .OrderByDescending(e => e.GetPreamble().Length)
+                .ToArray();
+        }
 
         /// <summary>
         /// Determines if a file exists
@@ -62,28 +74,20 @@ namespace roundhouse.infrastructure.filesystem
         /// </summary>
         /// <param name="file_path">Path to the file name</param>
         /// <returns>A best guess at the encoding of the file</returns>
-        /// <remarks>http://www.west-wind.com/WebLog/posts/197245.aspx</remarks>
+        /// <remarks>http://www.west-wind.com/WebLog/posts/197245.aspx was
+        /// the original inspiration, but this has since been tweaked to fix some issues.</remarks>
         public static Encoding get_file_encoding(string file_path)
         {
-            // *** Use Default of Encoding.Default (Ansi CodePage)
-            Encoding enc = Encoding.Default;
-
             // *** Detect byte order mark if any - otherwise assume default
             byte[] buffer = new byte[5];
             FileStream file = new FileStream(file_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             file.Read(buffer, 0, 5);
             file.Close();
 
-            if (buffer[0] == 0xef && buffer[1] == 0xbb && buffer[2] == 0xbf)
-                enc = Encoding.UTF8;
-            else if (buffer[0] == 0xfe && buffer[1] == 0xff)
-                enc = Encoding.Unicode;
-            else if (buffer[0] == 0 && buffer[1] == 0 && buffer[2] == 0xfe && buffer[3] == 0xff)
-                enc = Encoding.UTF32;
-            else if (buffer[0] == 0x2b && buffer[1] == 0x2f && buffer[2] == 0x76)
-                enc = Encoding.UTF7;
-
-            return enc;
+            Encoding encoding = encodings.FirstOrDefault(e => buffer.sequence_starts_with(e.GetPreamble()));
+            if (encoding == null && buffer[0] == 0x2b && buffer[1] == 0x2f && buffer[2] == 0x76)
+                encoding = Encoding.UTF7; // the UTF7.GetPreamble doesn't return bytes, do this manually
+            return encoding ?? Encoding.Default;
         }
 
         /// <summary>

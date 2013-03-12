@@ -166,6 +166,12 @@
     <Content Include="infrastructure\filesystem\ansiencoded.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="infrastructure\filesystem\utf16beEncoded.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="infrastructure\filesystem\utf16leEncoded.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="infrastructure\filesystem\utf8encoded.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
